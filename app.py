@@ -3,63 +3,89 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-com_no = st.sidebar.selectbox("comparison or specatation?","single company,comparison in 2".split(','))
+menu_items = [
+    'Home',
+    'Analyse Crypto by Market',
+    'Analyse Crypto by Time',
+    'Analyse Crypto by Close Prices',
+    ]
 
-menu = st.sidebar.selectbox("navigate through pages","line chart,candlestick chart,description,bar".split(','))
-data = pd.read_csv('crypto-markets.csv')
+x = 10
 
-com1 = st.sidebar.selectbox("please select a company...", tuple(set(data.name)), key = 'com1')
+st.set_page_config(
+    page_title = "Analysis of CryptoCurrency Dataset",
+    page_icon = "bitcoin icon.png"
+)
 
-df1 = data[data.name == com1]
+st.sidebar.header("Analysis of CryptoCurrency Dataset")
+st.sidebar.image('crypto.jpeg')
+menu = st.sidebar.selectbox('Navigate through pages', menu_items)
+df = pd.read_csv('crypto-markets.csv')
+df_max = pd.read_csv('crypto_max.csv')
 
-if com_no.startswith('comparison'):
-    com2 = st.sidebar.selectbox("please select a company...", tuple(set(data.name)), key = 'com2')
-    df2 = data[data.name == com2]
-    #scaler = StandardScaler()
-    #scaler.fit([df1.close, df2.close])
-    temp1 = pd.DataFrame({'date':df1.date, com1:df1.close})
-    temp2 = pd.DataFrame({'date':df2.date, com2:df2.close})
-    #frame = {'date':df1.date, 'close1':df1.close,'close2':df2.close}
-    df3 = pd.merge(temp1, temp2, on='date', how='inner')
+if menu == 'Home':
+    st.title("Welcome to Crypto Currency Analysis")
+    col1, col2 = st.beta_columns([2,1])
+    col1.write("Hey there,\n\nThis project is made to compare and analyze the data of Crypto Currencies.\n\nBy Anant Jain")
+    col2.image("bitcoin icon.png")
 
-if menu.startswith('line'):
-    if com_no.startswith('com'):
-        fig = px.line(df3, x='date', y=df3.columns[1:])
-    else:
-        fig = px.line(df1, x='date', y='close')
+    st.header("A slight look of the data")
+    st.write("  ")
+    st.write(df.head(x))
+    st.markdown("<hr>", unsafe_allow_html= True)
+    col1, col2 = st.beta_columns(2)
+    col1.subheader("Number of Rows:")
+    col1.write(df.shape[0])
+    col2.subheader("Number of Columns:")
+    col2.write(df.shape[1])
+    st.markdown("<hr>", unsafe_allow_html= True)
+
+    st.header("Crypto Currency Dataset Summary")
+    st.write(" ")
+    st.write(df.describe())
+
+    st.header("Columns description")
+    for i in df.columns:
+        st.subheader(i)
+        col1, col2 = st.beta_columns(2)
+        col1.caption("Unique Values")
+        col1.write(len(df[i].unique()))
+        col2.caption("Type of Data")
+        col2.write("String of Characters" if type(df[i].iloc[0]) is str else "Numerical")
+        st.markdown("<hr>",unsafe_allow_html = True)
+
+if menu == menu_items[1]:
+    st.title(menu_items[1])
+    st.header("Performance of top 10 CryptoCurrencies according to rank")
+    ranked_df = df[df.date=='2018-11-29'].sort_values(by=['ranknow']).head(x)
+    fig = px.bar(ranked_df, x='name', y='market')
     st.plotly_chart(fig)
+    st.write("We can clearly see that Bitcoin is ranked highest and also has the much higher market value then the rest.")
+    
 
-if menu.startswith('candle'):
-    st.title(f"Candle Stick Plot of {com1}")
-    fig = go.Figure(data=[go.Candlestick(x=df1['date'],open=df1['open'],
-            high=df1['high'],low=df1['low'],close=df1['close'])])
+if menu == menu_items[2]:
+    st.title(menu_items[2])
+    st.header("Performance of Oldest Cryptocurrency - Bitcoin")
+    old = pd.read_csv('old.csv')
+    temp = df[df.name == old.name.iloc[0]].tail(180)
+    fig = px.line(temp, x='date', y='close')
     st.plotly_chart(fig)
-    try:
-        st.title(f"Candle Stick Plot of {com2}")
-        fig2 = go.Figure(data=[go.Candlestick(x=df2['date'],open=df2['open'],
-                    high=df2['high'],low=df2['low'],close=df2['close'])])
-        st.plotly_chart(fig2)
-    except:
-        pass
-
-if menu.startswith('des'):
-    st.title(f"Describing the data of {com1}")
-    des = pd.DataFrame(df1.describe())
-    st.write(des)
-    try:
-        st.title(f"Describing the data of {com2}")
-        des2 = pd.DataFrame(df2.describe())
-        st.write(des2)
-    except:
-        pass
-
-if menu.startswith('bar'):
-    st.title(f"Bar chart of {com1}")
-    fig = px.bar(df1,x='date', y='close')
+    st.write('Bitcoin drastically lowered in price in fall of 2018.')
+    st.markdown("<hr>", unsafe_allow_html=True)
+    new = pd.read_csv('new.csv')
+    new_name = new.name.iloc[9]
+    st.header(f"Performance of Newest CryptoCurrency - {new_name}")
+    temp = df[df.name == new_name]
+    fig = px.line(temp, x='date', y='close')
     st.plotly_chart(fig)
-    try:
-        st.title(f"Bar chart of {com2}")
-        fig2 = px.bar(df2,x='date', y='close')
-        st.plotly_chart(fig2)
-    except:
-        pass
+    st.write(f"{new_name}'s price went straight down in a day.")
+    
+
+if menu == menu_items[3]:
+    st.title(menu_items[3])
+    st.header("Highest All time closing prices of top 10 CryptoCurrencies")
+    cl_sort = df_max.sort_values(by=['close'], ascending=False).head(x)
+    fig = px.bar(cl_sort, x='name', y='close')
+    st.plotly_chart(fig)
+    st.write("Project-X has all-time highest closing price.")
+
